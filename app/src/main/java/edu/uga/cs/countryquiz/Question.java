@@ -7,7 +7,7 @@ public class Question {
     private final ArrayList<String> options;
     private int selectedCapital;
 
-    public Question() {
+    public Question(Country country, ArrayList<String> options) {
         this.country = country;
         this.options = options;
         this.selectedCapital = -1;

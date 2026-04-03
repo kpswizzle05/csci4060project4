@@ -1,8 +1,9 @@
 package edu.uga.cs.countryquiz;
 
+import java.io.Serializable;
 import java.sql.Array;
 import java.util.ArrayList;
-public class Quiz {
+public class Quiz implements Serializable {
 
     private ArrayList<Question> questions;
     private int currentIndex;

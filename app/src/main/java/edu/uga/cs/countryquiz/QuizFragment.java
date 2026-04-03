@@ -3,56 +3,41 @@ package edu.uga.cs.countryquiz;
 import android.os.Bundle;
 
 import androidx.fragment.app.Fragment;
+import androidx.viewpager2.widget.ViewPager2;
 
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+
 /**
  * A simple {@link Fragment} subclass.
- * Use the {@link QuizFragment#newInstance} factory method to
+ * Use the {@link QuizFragment #newInstance} factory method to
  * create an instance of this fragment.
  */
 public class QuizFragment extends Fragment {
 
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
+    private static final String TAG = "QuizFragment";
 
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
+    private static final String ARG_QUESTION_INDEX = "arg_question_index";
+    private static final String STATE_QUIZ = "state_quiz";
+
+    private ViewPager2 viewPager;
+    private Quiz quiz;
+    private boolean resultSaved = false;
 
     public QuizFragment() {
         // Required empty public constructor
     }
 
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment QuizFragment.
-     */
-    // TODO: Rename and change types and number of parameters
-    public static QuizFragment newInstance(String param1, String param2) {
-        QuizFragment fragment = new QuizFragment();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
-        return fragment;
-    }
-
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
-        }
     }
 
     @Override
@@ -60,5 +45,85 @@ public class QuizFragment extends Fragment {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_quiz, container, false);
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        viewPager = view.findViewById(R.id.questionViewPager);
+
+        if (savedInstanceState != null) {
+            quiz = (Quiz) savedInstanceState.getSerializable(STATE_QUIZ);
+            if (quiz != null) {
+                setupPager();
+                viewPager.setCurrentItem(quiz.getCurrentIndex(), false);
+                return;
+            }
+        }
+        //new LoadCountriesTask (task that connects to the database)
+
+    }
+
+    public void onCountriesLoaded(List<Country> countries) {
+        quiz = QuizGenerator.generateQuiz(countries);
+        setupPager();
+    }
+
+    public void setupPager() {
+        QuestionPagerAdapter adapter = new QuestionPagerAdapter(this, quiz);
+        viewPager.setAdapter(adapter);
+        viewPager.setUserInputEnabled(true);
+
+        viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
+            @Override
+            public void onPageSelected(int position) {
+                quiz.setCurrentIndex(position);
+                quiz.updateScore();
+
+                Log.d(TAG, "Current page: " + position + ", answered=" + quiz.getNumberAnswered() + ", score=" + quiz.getScore());
+
+                if (position == quiz.getQuestions().size()) {
+                    finishQuizIfNeeded();
+                }
+            }
+        });
+    }
+
+    public Quiz getQuiz() {
+        return quiz;
+    }
+
+    public void goToNextPage() {
+        if (viewPager.getCurrentItem() < quiz.getQuestions().size()) {
+            viewPager.setCurrentItem(viewPager.getCurrentItem() + 1, true);
+        }
+    }
+
+    private void finishQuizIfNeeded() {
+        if (resultSaved) return;
+
+        quiz.updateScore();
+        if (!quiz.isFinished()) {
+            return;
+        }
+
+        resultSaved = true;
+
+        String date = new SimpleDateFormat("YYYY-MM-DD HH:mm", Locale.getDefault())
+                .format(new Date());
+
+        //new SaveQuizResultTask
+
+        ((MainActivity) requireActivity()).showFragment(
+                ResultsFragment.newInstance(quiz.getScore(), quiz.getMaxScore()),
+                false
+        );
+    }
+
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        if (quiz != null) {
+            quiz.updateScore();
+            outState.putSerializable(STATE_QUIZ, quiz);
+        }
     }
 }
