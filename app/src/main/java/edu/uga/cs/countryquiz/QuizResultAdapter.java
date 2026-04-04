@@ -3,6 +3,7 @@ package edu.uga.cs.countryquiz;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -22,13 +23,13 @@ public class QuizResultAdapter extends RecyclerView.Adapter<QuizResultAdapter.Vi
     }
 
     @Override
-    public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+    public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_quiz_result, parent, false);
-        return new RecyclerView.ViewHolder(view);
+        return new ViewHolder(view);
     }
 
-    public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+    public void onBindViewHolder(ViewHolder holder, int position) {
         Result result = results.get(position);
         holder.dateText.setText(result.getDate());
         holder.scoreText.setText("Score: " + result.getScore());
